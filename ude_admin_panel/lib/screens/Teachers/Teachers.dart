@@ -1,0 +1,250 @@
+// ignore_for_file: file_names, use_build_context_synchronously
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:ude_admin_panel/Repository/UserRepo.dart';
+import 'package:ude_admin_panel/module/loading.dart';
+
+import '../../Bloc/BlocState.dart';
+import '../../module/estension.dart';
+import '../../module/widgets.dart';
+import 'Sceances.dart';
+import 'TeacherClasse.dart';
+
+class Teachers extends StatelessWidget {
+  const Teachers({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    context.userBloc.loadTeacherList(context.user!.id!.substring(0, 4));
+    Future.delayed(const Duration(seconds: 2));
+    String newcode = '';
+    final formkey = GlobalKey<FormState>();
+    MBloc<bool> newteacher = MBloc<bool>()..setValue(false);
+    TextEditingController? code = TextEditingController();
+    TextEditingController? firstname = TextEditingController();
+    TextEditingController? lastname = TextEditingController();
+    TextEditingController? classe = TextEditingController();
+    final List<String> userclasse = [
+      '10eCG',
+      '11eS',
+      '11eSES',
+      '11eL',
+      '12eSE',
+      '12eSET',
+      '12eECO',
+      '12eLL'
+    ];
+    final String codePattern =
+        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{8}\$";
+    final RegExp codregex = RegExp(codePattern);
+    final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z]+$');
+    return Stack(
+      children: [
+        SizedBox(
+          width: context.width * 0.75,
+          height: context.height * 0.75,
+          child: StreamBuilder<Object>(
+              stream: context.userBloc.userListStream,
+              builder: (context, snapshot) {
+                if (snapshot.data is Failed) {
+                  return MError(exception: (snapshot.data as Failed).exception);
+                }
+                if (snapshot.data is LoadData) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(
+                            width: 45,
+                          ),
+                          'Name'.toLabel(bold: true).expand,
+                          'Hours'.toLabel(bold: true).expand,
+                          MIconButton(
+                            hint: 'new teacher',
+                            icon: const Icon(Icons.add_box_outlined,
+                                color: Colors.blue),
+                            onPressed: () {
+                              newteacher.setValue(true);
+                            },
+                          ),
+                        ],
+                      ).padding9.cardColor(
+                          color: context.accentColor.withOpacity(0.15)),
+                      SizedBox(
+                        height: 500,
+                        child: ListView.builder(
+                          itemCount: (snapshot.data as LoadData).rows.length,
+                          itemBuilder: (context, index) {
+                            final enseignant =
+                                (snapshot.data as LoadData).rows[index];
+                            return Row(
+                              children: [
+                                const Icon(Icons.person_rounded).hMargin9,
+                                '${enseignant.firstname} ${enseignant.lastname}'
+                                    .toLabel(bold: true)
+                                    .expand,
+                                '            ${enseignant.hours}'
+                                    .toLabel(bold: true)
+                                    .expand,
+                                MIconButton(
+                                    icon: const Icon(Icons.school),
+                                    onPressed: () {
+                                      context.userBloc.loadTeacherClasseList(
+                                          context.user!.id!.substring(0, 4),
+                                          enseignant.id);
+                                      context.showAsDialog(TeacherClasse(
+                                        enseignant: enseignant,
+                                      ));
+                                    },
+                                    hint: 'Classes'),
+                                MIconButton(
+                                    icon: const Icon(FontAwesomeIcons.scroll),
+                                    onPressed: () {
+                                      context.userBloc.loadTeacherSceanceList(
+                                          context.user!.id!.substring(0, 4),
+                                          enseignant.id);
+                                      context.showAsDialog(TeacherSceance(
+                                        enseignant: enseignant,
+                                      ));
+                                    },
+                                    hint: 'Sceance'),
+                                MIconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {},
+                                    hint: 'Supprimer')
+                              ],
+                            ).padding9.cardColor(
+                                color: index.isOdd
+                                    ? context.bottomAppBarColor
+                                    : null);
+                          },
+                        ),
+                      ).expand
+                    ],
+                  );
+                }
+                return const MWaiting().center;
+              }),
+        ),
+        StreamBuilder<bool>(
+            stream: newteacher.stream,
+            builder: (context, snap) {
+              return snap.hasData && snap.data!
+                  ? Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.grey.withOpacity(0.35),
+                      child: Center(
+                        child: SizedBox(
+                          width: 300,
+                          child: Form(
+                            key: formkey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  height: 20,
+                                ),
+                                MEdit(
+                                  controller: code,
+                                  hint:
+                                      'teacher code(must start with ${context.user!.id!.substring(0, 4)})',
+                                  onChange: (val) {
+                                    newcode = val;
+                                  },
+                                  autoFocus: true,
+                                  notEmpty: true,
+                                  pattern: codregex,
+                                ),
+                                const SizedBox(
+                                  height: 20,
+                                ),
+                                MEdit(
+                                  controller: firstname,
+                                  hint: 'Firstname',
+                                  onChange: (val) {},
+                                  autoFocus: true,
+                                  notEmpty: true,
+                                  pattern: simpleFieldRegex,
+                                ),
+                                const SizedBox(
+                                  height: 20,
+                                ),
+                                MEdit(
+                                  controller: lastname,
+                                  hint: 'Lastname',
+                                  onChange: (val) {},
+                                  autoFocus: true,
+                                  notEmpty: true,
+                                  pattern: simpleFieldRegex,
+                                ),
+                                const SizedBox(
+                                  height: 20,
+                                ),
+                                MDropdownTextField(
+                                  controller: classe,
+                                  hint: 'Classe',
+                                  dropvalues: userclasse,
+                                  autoFocus: true,
+                                  notEmpty: true,
+                                  pattern: simpleFieldRegex,
+                                ),
+                                const SizedBox(
+                                  height: 35,
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    MButton(
+                                        type: ButtonType.Cancel,
+                                        onTap: () {
+                                          newteacher.setValue(false);
+                                        },
+                                        title: 'Cancel'),
+                                    MButton(
+                                        type: ButtonType.New,
+                                        onTap: () async {
+                                          if (formkey.currentState!
+                                              .validate()) {
+                                            Chargement(context);
+                                            DocumentReference classeRef =
+                                                await UserRepo.getClasseRef(
+                                                    context,
+                                                    context.user!.id!
+                                                        .substring(0, 4),
+                                                    classe.text);
+                                            if (await context.userBloc
+                                                .addTeacher(
+                                                    context,
+                                                    newcode.toUpperCase(),
+                                                    firstname.text,
+                                                    lastname.text,
+                                                    classeRef)) {
+                                              Navigator.of(context).pop();
+                                              newteacher.setValue(false);
+                                            } else {
+                                              Navigator.of(context).pop();
+                                              newteacher.setValue(false);
+                                              context.snackBar(
+                                                  "Erreur lors de l'ajout de l'enseignant");
+                                            }
+                                          }
+                                        },
+                                        title: 'new'),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                        ).padding9.card,
+                      ),
+                    )
+                  : Container();
+            })
+      ],
+    );
+  }
+}
