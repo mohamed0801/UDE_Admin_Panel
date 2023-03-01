@@ -1,6 +1,7 @@
-// ignore_for_file: file_names
+// ignore_for_file: file_names, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:ude_admin_panel/Services/db.dart';
 import 'package:ude_admin_panel/module/loading.dart';
 
 import '../../Bloc/BlocState.dart';
@@ -24,9 +25,10 @@ class ClasseStudent extends StatelessWidget {
     TextEditingController? sexe = TextEditingController();
     final List<String> studentsexe = ['Masculin', 'Feminin'];
     final String codePattern =
-        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{8}\$";
+        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{7}\$";
     final RegExp codregex = RegExp(codePattern);
-    final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z]+$');
+    final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z\s]+$');
+    final RegExp simpleFieldNumberRegex = RegExp(r'^[a-zA-Z0-9]+$');
     return Stack(
       children: [
         SizedBox(
@@ -140,16 +142,22 @@ class ClasseStudent extends StatelessWidget {
                                           .expand,
                                       MIconButton(
                                           icon: const Icon(Icons.info),
-                                          onPressed: () {
+                                          onPressed: () async {
                                             context.userBloc
                                                 .loadStudentAbscenceList(
                                                     context.user!.id!
                                                         .substring(0, 4),
                                                     classe.name,
                                                     student.id);
+                                            final matieres = await DBServices
+                                                .getClasseMatiere(
+                                                    context.user!.id!
+                                                        .substring(0, 4),
+                                                    classe.name);
                                             context
                                                 .showAsDialog(StudentAbscence(
                                               student: student,
+                                              matieres: matieres,
                                             ));
                                           },
                                           hint: 'Abscence'),
@@ -224,7 +232,7 @@ class ClasseStudent extends StatelessWidget {
                                   onChange: (val) {},
                                   autoFocus: true,
                                   notEmpty: true,
-                                  pattern: simpleFieldRegex,
+                                  pattern: simpleFieldNumberRegex,
                                 ),
                                 const SizedBox(
                                   height: 20,

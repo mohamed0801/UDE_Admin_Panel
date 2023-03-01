@@ -3,18 +3,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AbscenceM {
-  AbscenceM({
-    required this.mathematique,
-  });
+  AbscenceM({required this.matiere, required this.abscence});
   // ignore: prefer_typing_uninitialized_variables
-  late var mathematique, creneau, matiere, volume, date;
+  late var matiere, abscence;
 
   factory AbscenceM.fromSnapshot(DocumentSnapshot<Map<String?, dynamic>> d) {
     final data = d.data();
-    return AbscenceM(mathematique: data!['Mathematique'].toString());
+    return AbscenceM(
+        matiere: data!['Matiere'].toString(),
+        abscence: data['Abscence'].toString());
   }
 
   Map<String?, dynamic> toMap() => {
-        'Mathematique': mathematique,
+        'Matiere': matiere,
+        'Abscence': abscence,
       };
 }

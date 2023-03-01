@@ -32,7 +32,7 @@ class User {
     return User(
         id: data!['id'].toString(),
         firstname: data['Nom'].toString(),
-        lastname: data['Prenom'].toString(),
+        lastname: data['Prénom'].toString(),
         token: data['token'].toString(),
         active: data['active'],
         lastlogin: data['lastlogin'].toString());
@@ -41,8 +41,8 @@ class User {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
-    data['firstname'] = firstname;
-    data['lastname'] = lastname;
+    data['Nom'] = firstname;
+    data['Prénom'] = lastname;
     data['token'] = token;
     data['active'] = active! ? 1 : 0;
     data['lastlogin'] = lastlogin;

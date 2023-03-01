@@ -41,6 +41,10 @@ class UserBloc extends Cubit<BlocState> {
       BehaviorSubject<BlocState>();
   Stream<BlocState> get studentAbscenceListStream =>
       _studentabscencelist.stream;
+  final BehaviorSubject<BlocState> _sceanceAbscenceList =
+      BehaviorSubject<BlocState>();
+  Stream<BlocState> get sceanceAbscenceListStream =>
+      _sceanceAbscenceList.stream;
 
   Future<void> authenticate(
       String lycee, String matricule, bool remember) async {
@@ -154,6 +158,19 @@ class UserBloc extends Cubit<BlocState> {
         _sceancelist.add(LoadData(await UserRepo.loadSceance(lycee, teacher)));
       } catch (e) {
         _sceancelist.add(Failed(Exception('$e')));
+      }
+    }
+  }
+
+  Future<void> loadSceanceAbscenceList(
+      String lycee, String enseignant, String sceance) async {
+    if (_sceancelist.value is LoadData) {
+      try {
+        _sceanceAbscenceList.add(Loading());
+        _sceanceAbscenceList.add(LoadData(
+            await UserRepo.loadSceanceAbscence(lycee, enseignant, sceance)));
+      } catch (e) {
+        _sceanceAbscenceList.add(Failed(Exception('$e')));
       }
     }
   }

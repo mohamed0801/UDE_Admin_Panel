@@ -16,7 +16,7 @@ class EnseignantM {
     return EnseignantM(
         id: data!['Id'].toString(),
         firstname: data['Nom'].toString(),
-        lastname: data['Prenom'].toString(),
+        lastname: data['Prénom'].toString(),
         hours: data['nbHeures'].toString());
   }
 

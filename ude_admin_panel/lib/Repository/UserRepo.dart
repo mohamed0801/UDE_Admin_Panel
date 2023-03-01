@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:ude_admin_panel/Model/Student.dart';
 import 'package:ude_admin_panel/module/estension.dart';
 
 import '../Model/Enseignant.dart';
@@ -61,6 +62,14 @@ class UserRepo {
     sceances = await DBServices.getSceances(lycee, teacher);
     Future.delayed(const Duration(seconds: 2));
     return sceances;
+  }
+
+  static Future<List<StudentM>> loadSceanceAbscence(
+      String lycee, String enseignant, String sceance) async {
+    late final List<StudentM> student;
+    student = await DBServices.getSceanceAbscence(lycee, enseignant, sceance);
+    Future.delayed(const Duration(seconds: 2));
+    return student;
   }
 
   static Future<User> authenticateByToken(String token) async {

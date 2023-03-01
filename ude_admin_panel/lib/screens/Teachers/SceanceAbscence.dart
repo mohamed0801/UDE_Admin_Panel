@@ -1,16 +1,16 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
-import 'package:ude_admin_panel/screens/Teachers/SceanceAbscence.dart';
+import 'package:ude_admin_panel/Model/Sceance.dart';
 
 import '../../Bloc/BlocState.dart';
-import '../../Model/Enseignant.dart';
+import '../../Model/Student.dart';
 import '../../module/estension.dart';
 import '../../module/widgets.dart';
 
-class TeacherSceance extends StatelessWidget {
-  final EnseignantM enseignant;
-  const TeacherSceance({required this.enseignant, super.key});
+class SceanceAbscence extends StatelessWidget {
+  final SceanceM sceance;
+  const SceanceAbscence({required this.sceance, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +23,23 @@ class TeacherSceance extends StatelessWidget {
             children: [
               Container(
                 width: 2,
-                height: 35,
-                color: Colors.green,
+                height: 42,
+                decoration: const BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12))),
               ),
-              const Icon(Icons.person_rounded).hMargin9,
-              '${enseignant.firstname} ${enseignant.lastname}'
-                  .toLabel(bold: true)
-                  .expand,
-              '                                                                           ${enseignant.hours}'
-                  .toLabel(bold: true)
-                  .expand,
+              const SizedBox(
+                width: 3,
+              ),
+              const Icon(Icons.person).hMargin9,
+              '${sceance.id}'.toLabel(bold: true).expand,
+              '${sceance.classe}'.toLabel(bold: true).expand,
+              '      ${sceance.matiere}'.toLabel(bold: true).expand,
+              '                ${sceance.creneau}'.toLabel(bold: true).expand,
+              '                  ${sceance.volume}'.toLabel(bold: true).expand,
+              '                ${sceance.date}'.toLabel(bold: true).expand,
             ],
           ).padding9.cardColor(color: context.bottomAppBarColor),
           Row(
@@ -40,16 +47,13 @@ class TeacherSceance extends StatelessWidget {
               const SizedBox(
                 width: 45,
               ),
-              'Id'.toLabel(bold: true).expand,
-              'Classe'.toLabel(bold: true).expand,
-              'Creneau'.toLabel(bold: true).expand,
-              'Matiere'.toLabel(bold: true).expand,
-              'Volume'.toLabel(bold: true).expand,
-              'Date'.toLabel(bold: true).expand,
+              'Matricule'.toLabel(bold: true).expand,
+              '        Nom'.toLabel(bold: true).expand,
+              '              Prénom'.toLabel(bold: true).expand,
             ],
           ).padding9.cardColor(color: context.accentColor.withOpacity(0.15)),
           StreamBuilder<Object>(
-              stream: context.userBloc.sceanceListStream,
+              stream: context.userBloc.sceanceAbscenceListStream,
               builder: (context, snap) {
                 if (snap.data is Failed) {
                   return MError(exception: (snap.data as Failed).exception);
@@ -60,7 +64,8 @@ class TeacherSceance extends StatelessWidget {
                     child: ListView.builder(
                       itemCount: (snap.data as LoadData).rows.length,
                       itemBuilder: (context, index) {
-                        final sceance = (snap.data as LoadData).rows[index];
+                        final StudentM student =
+                            (snap.data as LoadData).rows[index];
                         return Column(
                           children: [
                             Row(
@@ -69,7 +74,7 @@ class TeacherSceance extends StatelessWidget {
                                   width: 2,
                                   height: 42,
                                   decoration: const BoxDecoration(
-                                      color: Colors.green,
+                                      color: Colors.red,
                                       borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(12),
                                           bottomLeft: Radius.circular(12))),
@@ -77,27 +82,13 @@ class TeacherSceance extends StatelessWidget {
                                 const SizedBox(
                                   width: 3,
                                 ),
-                                const Icon(Icons.school).hMargin9,
-                                '${sceance.id}'.toLabel(bold: true).expand,
-                                '${sceance.classe}'.toLabel(bold: true).expand,
-                                '${sceance.creneau}'.toLabel(bold: true).expand,
-                                '${sceance.matiere}'.toLabel(bold: true).expand,
-                                '         ${sceance.volume}'
+                                '    ${student.id}'.toLabel(bold: true).expand,
+                                '                   ${student.firstname}'
                                     .toLabel(bold: true)
                                     .expand,
-                                '${sceance.date}'.toLabel(bold: true).expand,
-                                MIconButton(
-                                    icon: const Icon(Icons.info),
-                                    onPressed: () {
-                                      context.userBloc.loadSceanceAbscenceList(
-                                          context.user!.id!.substring(0, 4),
-                                          enseignant.id,
-                                          sceance.id);
-                                      context.showAsDialog(SceanceAbscence(
-                                        sceance: sceance,
-                                      ));
-                                    },
-                                    hint: 'Abscence'),
+                                '                          ${student.lastname}'
+                                    .toLabel(bold: true)
+                                    .expand,
                                 MIconButton(
                                     icon: const Icon(Icons.delete),
                                     onPressed: () {},

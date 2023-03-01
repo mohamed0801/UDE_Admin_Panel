@@ -72,7 +72,6 @@ class Login extends StatelessWidget {
                                   _matricule!.text.substring(0, 4),
                                   _matricule!.text,
                                   _remember);
-                              print('LOGIN');
                             }
                           },
                           icon: const Icon(Icons.vpn_key, size: 15),

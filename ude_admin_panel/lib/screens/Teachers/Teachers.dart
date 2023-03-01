@@ -37,9 +37,10 @@ class Teachers extends StatelessWidget {
       '12eLL'
     ];
     final String codePattern =
-        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{8}\$";
+        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{7}\$";
     final RegExp codregex = RegExp(codePattern);
-    final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z]+$');
+    final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z\s]+$');
+    final RegExp simpleFieldNumberRegex = RegExp(r'^[a-zA-Z0-9]+$');
     return Stack(
       children: [
         SizedBox(
@@ -153,6 +154,7 @@ class Teachers extends StatelessWidget {
                                       'teacher code(must start with ${context.user!.id!.substring(0, 4)})',
                                   onChange: (val) {
                                     newcode = val;
+                                    print(codePattern);
                                   },
                                   autoFocus: true,
                                   notEmpty: true,
@@ -189,7 +191,7 @@ class Teachers extends StatelessWidget {
                                   dropvalues: userclasse,
                                   autoFocus: true,
                                   notEmpty: true,
-                                  pattern: simpleFieldRegex,
+                                  pattern: simpleFieldNumberRegex,
                                 ),
                                 const SizedBox(
                                   height: 35,

@@ -16,7 +16,7 @@ class StudentM {
     return StudentM(
         id: data!['id'].toString(),
         firstname: data['Nom'].toString(),
-        lastname: data['Prenom'].toString(),
+        lastname: data['Prénom'].toString(),
         abscence: data['TotalAbscence'].toString());
   }
 

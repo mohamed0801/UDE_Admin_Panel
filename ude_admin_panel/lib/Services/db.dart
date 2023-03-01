@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:ude_admin_panel/Model/Abscence.dart';
 import 'package:ude_admin_panel/Model/Classe.dart';
 import 'package:ude_admin_panel/Model/Enseignant.dart';
+import 'package:ude_admin_panel/Model/Matiere.dart';
 import 'package:ude_admin_panel/Model/Sceance.dart';
 import 'package:ude_admin_panel/Model/Student.dart';
 import 'package:ude_admin_panel/Model/User.dart';
@@ -71,7 +72,7 @@ class DBServices {
     try {
       Map<String, dynamic> newdata = {
         'Nom': firstname,
-        'Prenom': lastname,
+        'Prénom': lastname,
         'Id': enseignant,
         'nbHeures': '0:00'
       };
@@ -167,6 +168,20 @@ class DBServices {
     return ref;
   }
 
+  static Future<List<MatiereM>> getClasseMatiere(
+      String lycee, String classe) async {
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await lyceecol
+        .doc(lycee)
+        .collection('Classes')
+        .doc(classe)
+        .collection('Matieres')
+        .get();
+    List<MatiereM> listeMatieres =
+        snapshot.docs.map((doc) => MatiereM.fromSnapshot(doc)).toList();
+
+    return listeMatieres;
+  }
+
   static Future<List<StudentM>> getStudentList(
       String lycee, String classe) async {
     final QuerySnapshot<Map<String, dynamic>> snapshot = await lyceecol
@@ -207,18 +222,24 @@ class DBServices {
   static Future<StudentM?> addStudent(String lycee, String classe,
       String firstname, String lastname, String student, String sexe) async {
     try {
-      var etudiantRef = await lyceecol
+      await lyceecol
           .doc(lycee)
           .collection('Classes')
           .doc(classe)
           .collection('Etudiants')
-          .add({
+          .doc(student)
+          .set({
         'Nom': firstname,
-        'Prenom': lastname,
+        'Prénom': lastname,
         'id': student,
         'TotalAbscence': '0'
       });
-
+      var etudiantRef = lyceecol
+          .doc(lycee)
+          .collection('Classes')
+          .doc(classe)
+          .collection('Etudiants')
+          .doc(student);
       var etudiantSnapshot = await etudiantRef.get();
       var newetudiant = await lyceecol
           .doc(lycee)
@@ -228,11 +249,23 @@ class DBServices {
           .where('id', isEqualTo: etudiantSnapshot.data()!['id'])
           .get();
       var docRef = newetudiant.docs.first.reference;
-      Map<String, dynamic> data = {'Mathematique': '0'};
-      await docRef
-          .collection('Abscence')
-          .doc('Matieres')
-          .set(data, SetOptions(merge: true));
+      var matieres = await lyceecol
+          .doc(lycee)
+          .collection('Classes')
+          .doc(classe)
+          .collection('Matieres')
+          .get();
+      for (var mts in matieres.docs) {
+        var matname = mts.data()['Matiere'];
+        DocumentReference matRef = lyceecol
+            .doc(lycee)
+            .collection('Classes')
+            .doc(classe)
+            .collection('Matieres')
+            .doc(matname);
+        await docRef.collection('Abscence').doc(matname).set(
+            {'Matiere': matRef.path, 'Abscence': '0'}, SetOptions(merge: true));
+      }
 
       print('Etudiant ajouté avec succès');
 
@@ -290,130 +323,25 @@ class DBServices {
     return listeSceances;
   }
 
-  static Future getClasseName(
-      String? lycee, String? id, List<String> paths, List<String> list) async {
-    try {
-      String classeName;
-      final snapshot = await lyceecol
-          .doc(lycee)
-          .collection('Enseignant')
-          .doc(id)
-          .collection('Classes')
-          .get();
-      for (var classe in snapshot.docs) {
-        DocumentReference<Map<String, dynamic>> classeRef =
-            classe.data()["reference"];
-        DocumentSnapshot<Map<String, dynamic>>? classRoom;
-        //await DBServices.getClasse(classeRef.path, classRoom);
-        try {
-          await FirebaseFirestore.instance
-              .doc(classeRef.path)
-              .get()
-              .then((snapshot) {
-            if (snapshot.exists) {
-              debugPrint('SNAPSHOTTTT: ${snapshot.data()!["Nom"]}');
-              classRoom = snapshot;
-              paths.add(classeRef.path); //.data()!["Nom"];
-            } else {
-              debugPrint("Document not found");
-            }
-          });
-          debugPrint('CLASSROOMMMM: ${classRoom!.data()!["Nom"]}');
-        } catch (e) {
-          debugPrint('CLASSE Not EXIST');
-          print(e);
-          rethrow;
-        }
-        if (classRoom != null) {
-          print('CLASSENAME ${classRoom!.data()!["Nom"]}');
-          classeName = classRoom!.data()!["Nom"];
-          list.add(classeName);
-        } else {
-          print('Impossible de charger les classes affilees a cet enseignant');
-        }
-      }
-    } catch (e) {
-      print(e);
-      rethrow;
-    }
-  }
+  static Future<List<StudentM>> getSceanceAbscence(
+      String lycee, String enseignant, String sceance) async {
+    final snapshot = await lyceecol
+        .doc(lycee)
+        .collection('Enseignant')
+        .doc(enseignant)
+        .collection('Sceances')
+        .where('Id', isEqualTo: int.parse(sceance))
+        .get();
+    DocumentSnapshot documentSnapshot = snapshot.docs[0];
+    CollectionReference abscenceRef =
+        documentSnapshot.reference.collection('Abscences');
+    QuerySnapshot abscenceQuerySnapshot = await abscenceRef.get();
 
-  static Future updateHours(String? lycee, id, volume) async {
-    try {
-      var snapshot = await lyceecol
-          .doc(lycee)
-          .collection('Enseignant')
-          .where('Id', isEqualTo: id)
-          .get();
-      final EnseignantM userData = snapshot.docs
-          .map((QueryDocumentSnapshot<Object?> e) => EnseignantM.fromSnapshot(
-              e as DocumentSnapshot<Map<String?, dynamic>>))
-          .single;
+    List<StudentM> students = abscenceQuerySnapshot.docs
+        .map((doc) => StudentM.fromSnapshot(
+            doc as DocumentSnapshot<Map<String?, dynamic>>))
+        .toList();
 
-// Convertir les chaînes de caractères en objets DateTime
-      String prefixe = "";
-      if (userData.hours.length > 0 &&
-          int.tryParse(userData.hours[0]) != null &&
-          userData.hours[1] == ':') {
-        prefixe = "0";
-      }
-      String resultat = prefixe + userData.hours;
-
-      DateTime dateTime1 = DateTime.parse("${"2023-01-01 " + resultat}:00");
-      DateTime dateTime2 = DateTime.parse("${"2023-01-01 " + volume}:00");
-
-// Ajouter les deux heures en utilisant la classe Duration
-      Duration sum = Duration(
-          hours: dateTime1.hour + dateTime2.hour,
-          minutes: dateTime1.minute + dateTime2.minute);
-
-// Convertir le résultat en objet DateTime
-      DateTime result = DateTime(2023, 1, 1, 0, 0).add(sum);
-
-// Formater le résultat sous forme de chaîne de caractères
-      String formattedResult =
-          "${result.hour}:${result.minute.toString().padLeft(2, '0')}";
-
-      print('RESULTTTTT $formattedResult');
-
-      await lyceecol
-          .doc(lycee)
-          .collection('Enseignant')
-          .doc(id)
-          .update({'nbHeures': formattedResult});
-    } catch (e) {
-      debugPrint("Nombre dheure de l'enseignant non modifier");
-      rethrow;
-    }
-  }
-
-  static Future updateStudentAbscence(
-      StudentM student, String? path, String matiere) async {
-    try {
-      var snapshot = await FirebaseFirestore.instance
-          .doc(path!)
-          .collection('Etudiants')
-          .doc(student.id)
-          .collection('Abscence')
-          .doc('Matieres')
-          .get();
-      print('MATH ABSCENCENSE ${snapshot.data()}');
-      print('MATH ABSCENCENSE $matiere}');
-      var abscenceValue = int.parse('${snapshot.data()![matiere]}') + 1;
-      DocumentReference docRef = snapshot.reference;
-      await docRef.update({matiere: abscenceValue.toString()});
-
-      var total = await FirebaseFirestore.instance
-          .doc(path)
-          .collection('Etudiants')
-          .doc(student.id)
-          .get();
-      var totalAbscence = int.parse('${total.data()!['TotalAbscence']}') + 1;
-      DocumentReference absRef = total.reference;
-      await absRef.update({'TotalAbscence': totalAbscence.toString()});
-    } catch (e) {
-      debugPrint('Impossible de modifier les abscence des etudiants');
-      rethrow;
-    }
+    return students;
   }
 }
