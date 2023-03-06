@@ -20,6 +20,7 @@ class Teachers extends StatelessWidget {
     context.userBloc.loadTeacherList(context.user!.id!.substring(0, 4));
     Future.delayed(const Duration(seconds: 2));
     String newcode = '';
+    List<DocumentReference> classeRefs = [];
     final formkey = GlobalKey<FormState>();
     MBloc<bool> newteacher = MBloc<bool>()..setValue(false);
     TextEditingController? code = TextEditingController();
@@ -36,11 +37,12 @@ class Teachers extends StatelessWidget {
       '12eECO',
       '12eLL'
     ];
+
     final String codePattern =
         "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{7}\$";
     final RegExp codregex = RegExp(codePattern);
     final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z\s]+$');
-    final RegExp simpleFieldNumberRegex = RegExp(r'^[a-zA-Z0-9]+$');
+
     return Stack(
       children: [
         SizedBox(
@@ -154,7 +156,7 @@ class Teachers extends StatelessWidget {
                                       'teacher code(must start with ${context.user!.id!.substring(0, 4)})',
                                   onChange: (val) {
                                     newcode = val;
-                                    print(codePattern);
+                                    debugPrint(codePattern);
                                   },
                                   autoFocus: true,
                                   notEmpty: true,
@@ -185,13 +187,12 @@ class Teachers extends StatelessWidget {
                                 const SizedBox(
                                   height: 20,
                                 ),
-                                MDropdownTextField(
+                                CheckboxTextField(
                                   controller: classe,
                                   hint: 'Classe',
-                                  dropvalues: userclasse,
+                                  options: userclasse,
                                   autoFocus: true,
                                   notEmpty: true,
-                                  pattern: simpleFieldNumberRegex,
                                 ),
                                 const SizedBox(
                                   height: 35,
@@ -212,19 +213,26 @@ class Teachers extends StatelessWidget {
                                           if (formkey.currentState!
                                               .validate()) {
                                             Chargement(context);
-                                            DocumentReference classeRef =
-                                                await UserRepo.getClasseRef(
-                                                    context,
-                                                    context.user!.id!
-                                                        .substring(0, 4),
-                                                    classe.text);
+                                            for (var classe
+                                                in classe.text.split(',')) {
+                                              classe = classe.trim();
+
+                                              var classeRef =
+                                                  await UserRepo.getClasseRef(
+                                                      context,
+                                                      context.user!.id!
+                                                          .substring(0, 4),
+                                                      classe);
+                                              classeRefs.add(classeRef);
+                                            }
+
                                             if (await context.userBloc
                                                 .addTeacher(
                                                     context,
                                                     newcode.toUpperCase(),
                                                     firstname.text,
                                                     lastname.text,
-                                                    classeRef)) {
+                                                    classeRefs)) {
                                               Navigator.of(context).pop();
                                               newteacher.setValue(false);
                                             } else {

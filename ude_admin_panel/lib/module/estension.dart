@@ -36,11 +36,12 @@ extension ContextExtension on BuildContext {
         });
   }
 
-  void snackBar(String msg, {String? title}) {
+  void snackBar(String msg, {String? title, MaterialColor? color}) {
     Flushbar(
       title: title ?? 'Error',
       message: msg.replaceAll('Exception:', ''),
-      backgroundColor: title == null ? Colors.red : Colors.green,
+      backgroundColor:
+          title == null && color == null ? Colors.red : Colors.green,
       duration: const Duration(seconds: 3),
     ).show(this);
   }

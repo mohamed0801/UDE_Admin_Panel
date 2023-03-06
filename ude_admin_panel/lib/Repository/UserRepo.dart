@@ -2,7 +2,9 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:ude_admin_panel/Model/Student.dart';
+
 import 'package:ude_admin_panel/module/estension.dart';
 
 import '../Model/Enseignant.dart';
@@ -43,15 +45,11 @@ class UserRepo {
     return enseignant;
   }
 
-  static Future<EnseignantM?> addTeacher(
-      String lycee,
-      String ensgnt,
-      String firstname,
-      String lastname,
-      DocumentReference classeReference) async {
+  static Future<EnseignantM?> addTeacher(String lycee, String ensgnt,
+      String firstname, String lastname, List<dynamic> classeReferences) async {
     late final EnseignantM? enseignant;
     enseignant = (await DBServices.addTeacher(
-        lycee, firstname, lastname, ensgnt, classeReference));
+        lycee, firstname, lastname, ensgnt, classeReferences));
     Future.delayed(const Duration(seconds: 2));
     return enseignant;
   }
@@ -80,5 +78,22 @@ class UserRepo {
       }
       throw Exception("Matricule ou Mot de passe incorrecte");
     });
+  }
+
+  static Future<bool> resetAll(
+    String lycee,
+    String code,
+  ) async {
+    try {
+      var reset = await DBServices.resetAll(
+        lycee,
+        code,
+      );
+
+      return reset;
+    } catch (e) {
+      debugPrint(e.toString());
+      return false;
+    }
   }
 }

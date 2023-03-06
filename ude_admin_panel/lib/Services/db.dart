@@ -68,7 +68,7 @@ class DBServices {
       String firstname,
       String lastname,
       String enseignant,
-      DocumentReference classeReference) async {
+      List<dynamic> classeReferences) async {
     try {
       Map<String, dynamic> newdata = {
         'Nom': firstname,
@@ -88,15 +88,19 @@ class DBServices {
           .doc(enseignant)
           .get();
 
-      Map<String, dynamic> data = {'reference': classeReference};
-      await lyceecol
-          .doc(lycee)
-          .collection('Enseignant')
-          .doc(enseignant)
-          .collection('Classes')
-          .doc('classe')
-          .set(data, SetOptions(merge: true));
-
+      for (var classeRef in classeReferences) {
+        print('CLASSEREF:$classeRef');
+        Map<String, dynamic> data = {
+          'reference': classeRef as DocumentReference
+        };
+        await lyceecol
+            .doc(lycee)
+            .collection('Enseignant')
+            .doc(enseignant)
+            .collection('Classes')
+            .doc(classeRef.path.toString().substring(20))
+            .set(data, SetOptions(merge: true));
+      }
       return EnseignantM.fromSnapshot(teacherSnapshot);
     } catch (e) {
       print('Erreur lors de l\'ajout de l\'étudiant : $e');
@@ -106,6 +110,7 @@ class DBServices {
 
   static Future getTeacherClasseList(String? lycee, String? teacher) async {
     try {
+      List<ClasseM> listeclasse = [];
       final snapshot = await lyceecol
           .doc(lycee)
           .collection('Enseignant')
@@ -133,17 +138,39 @@ class DBServices {
           rethrow;
         }
         if (classRoom != null) {
-          List<ClasseM> listeclasse = [];
           listeclasse.add(ClasseM.fromSnapshot(
               classRoom as DocumentSnapshot<Map<String?, dynamic>>));
-          return listeclasse;
         } else {
           print('Impossible de charger les classes affilees a cet enseignant');
         }
       }
+      return listeclasse;
     } catch (e) {
       print(e);
       rethrow;
+    }
+  }
+
+  static Future<bool> addTeacherClasse(
+      String lycee, String enseignant, List<dynamic> classeReferences) async {
+    try {
+      for (var classeRef in classeReferences) {
+        print('CLASSEREF:$classeRef');
+        Map<String, dynamic> data = {
+          'reference': classeRef as DocumentReference
+        };
+        await lyceecol
+            .doc(lycee)
+            .collection('Enseignant')
+            .doc(enseignant)
+            .collection('Classes')
+            .doc(classeRef.path.toString().substring(20))
+            .set(data, SetOptions(merge: true));
+      }
+      return true;
+    } catch (e) {
+      print('Erreur lors de l\'ajout de la classe : $e');
+      return false;
     }
   }
 
@@ -315,6 +342,7 @@ class DBServices {
         .collection('Enseignant')
         .doc(teacher)
         .collection('Sceances')
+        .orderBy('Date', descending: true)
         .get();
 
     List<SceanceM> listeSceances =
@@ -343,5 +371,62 @@ class DBServices {
         .toList();
 
     return students;
+  }
+
+  static Future<bool> resetAll(
+    String lycee,
+    String code,
+  ) async {
+    if (code == 'RESETALLDATA2023') {
+      try {
+        final QuerySnapshot<Object?> enseignants =
+            await lyceecol.doc(lycee).collection('Enseignant').get();
+        for (var enseignant in enseignants.docs) {
+          var enseignantRef = enseignant.reference;
+          var enseignantSceancesAbscences = await FirebaseFirestore.instance
+              .doc(enseignantRef.path)
+              .collection('Sceances')
+              .doc()
+              .collection('Abscences')
+              .get();
+          for (var abscence in enseignantSceancesAbscences.docs) {
+            await abscence.reference.delete();
+          }
+
+          await FirebaseFirestore.instance
+              .doc(enseignantRef.path)
+              .update({'nbHeures': '0:00'});
+          var enseignantSceances = await FirebaseFirestore.instance
+              .doc(enseignantRef.path)
+              .collection('Sceances')
+              .get();
+          for (var sceance in enseignantSceances.docs) {
+            await sceance.reference.delete();
+          }
+        }
+
+        final QuerySnapshot<Object?> classes =
+            await lyceecol.doc(lycee).collection('Classes').get();
+        for (var classe in classes.docs) {
+          var classeRef = classe.reference;
+          await FirebaseFirestore.instance
+              .doc(classeRef.path)
+              .update({'Fille': '0', 'Garcon': '0', 'NBEleves': '0'});
+          var classeStudents = await FirebaseFirestore.instance
+              .doc(classeRef.path)
+              .collection('Etudiants')
+              .get();
+          for (var student in classeStudents.docs) {
+            await student.reference.delete();
+          }
+        }
+        return true;
+      } catch (e) {
+        print(e.toString());
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
 }

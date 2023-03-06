@@ -51,7 +51,17 @@ class SideBar extends StatelessWidget {
             selected: selectedIndex == 2,
             onTap: () {
               onChanged(2);
-              context.userBloc.signOut();
+            },
+          ),
+          SizedBox(
+            height: context.height * 0.6,
+          ),
+          MSideBarItem(
+            title: 'Reset',
+            icon: Icons.lock_reset_rounded,
+            selected: selectedIndex == 3,
+            onTap: () {
+              onChanged(3);
             },
           ),
         ],

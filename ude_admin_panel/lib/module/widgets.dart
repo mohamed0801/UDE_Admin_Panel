@@ -142,8 +142,10 @@ class MEdit extends StatelessWidget {
   final bool password;
   final bool notEmpty;
   final TextEditingController? controller;
+  final String? error;
   const MEdit(
       {required this.hint,
+      this.error,
       this.controller,
       this.onChange,
       this.pattern,
@@ -170,7 +172,7 @@ class MEdit extends StatelessWidget {
           return "Requis";
         }
         if (!pattern!.hasMatch(value!)) {
-          return 'Format invalide';
+          return error == null ? 'Format invalide' : error;
         }
         return null;
       },
@@ -422,6 +424,98 @@ class MIconButton extends StatelessWidget {
         icon: icon,
         onPressed: onPressed,
       ),
+    );
+  }
+}
+
+class CheckboxTextField extends StatefulWidget {
+  final List<String> options;
+  final String hint;
+  final TextEditingController controller;
+  final bool notEmpty;
+  final bool autoFocus;
+  const CheckboxTextField(
+      {super.key,
+      required this.options,
+      required this.controller,
+      required this.hint,
+      this.autoFocus = false,
+      this.notEmpty = false});
+  @override
+  _CheckboxTextFieldState createState() => _CheckboxTextFieldState();
+}
+
+class _CheckboxTextFieldState extends State<CheckboxTextField> {
+  List<String> _selectedOptions = [];
+
+  void _showCheckboxDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Veuillez selectionner les classes'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: widget.options
+                .map(
+                  (option) => StatefulBuilder(
+                      builder: (BuildContext context, StateSetter setState) {
+                    return CheckboxListTile(
+                      activeColor: Colors.blue,
+                      title: Text(option),
+                      value: _selectedOptions.contains(option),
+                      onChanged: (value) {
+                        setState(() {
+                          if (_selectedOptions.contains(option)) {
+                            _selectedOptions.remove(option);
+                          } else {
+                            _selectedOptions.add(option);
+                          }
+                        });
+                      },
+                    );
+                  }),
+                )
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                widget.controller.text = _selectedOptions.join(', ');
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      decoration: InputDecoration(
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8), gapPadding: 20),
+          labelText: widget.hint,
+          labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 20)),
+      controller: widget.controller,
+      autofocus: widget.autoFocus,
+      onTap: _showCheckboxDialog,
+      validator: (value) {
+        if ((value ?? '').isEmpty && widget.notEmpty) {
+          return "Requis";
+        }
+
+        return null;
+      },
     );
   }
 }

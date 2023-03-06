@@ -1,12 +1,13 @@
 // ignore_for_file: file_names
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/subjects.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:ude_admin_panel/Model/Enseignant.dart';
 import 'package:ude_admin_panel/Model/Student.dart';
+
 import 'package:ude_admin_panel/Repository/StudentRepo.dart';
 import 'package:ude_admin_panel/module/estension.dart';
 
@@ -204,19 +205,15 @@ class UserBloc extends Cubit<BlocState> {
     }
   }
 
-  Future<bool> addTeacher(
-      BuildContext context,
-      String student,
-      String firstname,
-      String lastname,
-      DocumentReference classeReference) async {
+  Future<bool> addTeacher(BuildContext context, String student,
+      String firstname, String lastname, List<dynamic> classeReferences) async {
     try {
       EnseignantM? newen = await UserRepo.addTeacher(
           context.user!.id!.substring(0, 4),
           student,
           firstname,
           lastname,
-          classeReference);
+          classeReferences);
       if (_userlist.value is LoadData) {
         if ((_userlist.value as LoadData)
             .rows
@@ -228,6 +225,23 @@ class UserBloc extends Cubit<BlocState> {
       }
 
       return true;
+    } catch (e) {
+      context.snackBar(e.toString());
+      return false;
+    }
+  }
+
+  resetAll(
+    BuildContext context,
+    String code,
+  ) async {
+    try {
+      var reset = await UserRepo.resetAll(
+        context.user!.id!.substring(0, 4),
+        code,
+      );
+
+      return reset;
     } catch (e) {
       context.snackBar(e.toString());
       return false;

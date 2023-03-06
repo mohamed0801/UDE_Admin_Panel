@@ -1,12 +1,13 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
+import 'package:ude_admin_panel/screens/Dashboard/Reset.dart';
+import 'package:ude_admin_panel/screens/Dashboard/SignOut.dart';
 
 import '../../module/estension.dart';
 import '../../module/widgets.dart';
 import 'DashboardContent.dart';
 import 'SideBar.dart';
-import 'UserInfos.dart';
 
 MBloc<int> _menu = MBloc<int>()..setValue(1);
 
@@ -37,9 +38,12 @@ class _DashboardState extends State<Dashboard> {
               Container(
                 child: snap.data == 1
                     ? const DashboardContent()
-                    : 'Go To Dashboard '.toLabel().center,
+                    : snap.data == 2
+                        ? const SignOut()
+                        : snap.data == 3
+                            ? const Reset()
+                            : 'Go To Dashboard'.toLabel().center,
               ).expand,
-              const UserInfo(),
             ],
           );
         },
