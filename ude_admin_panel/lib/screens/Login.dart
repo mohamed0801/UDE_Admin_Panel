@@ -69,8 +69,10 @@ class Login extends StatelessWidget {
                           onTap: () {
                             if (formkey.currentState!.validate()) {
                               context.userBloc.authenticate(
-                                  _matricule!.text.substring(0, 4),
-                                  _matricule!.text,
+                                  _matricule!.text
+                                      .substring(0, 4)
+                                      .toUpperCase(),
+                                  _matricule!.text.toUpperCase(),
                                   _remember);
                             }
                           },

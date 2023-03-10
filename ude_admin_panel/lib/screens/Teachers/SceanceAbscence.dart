@@ -15,8 +15,8 @@ class SceanceAbscence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: context.width * 0.75,
-      height: context.height * 0.75,
+      width: context.width * 0.80,
+      height: context.height * 0.80,
       child: Column(
         children: [
           Row(
@@ -39,7 +39,7 @@ class SceanceAbscence extends StatelessWidget {
               '      ${sceance.matiere}'.toLabel(bold: true).expand,
               '                ${sceance.creneau}'.toLabel(bold: true).expand,
               '                  ${sceance.volume}'.toLabel(bold: true).expand,
-              '                ${sceance.date}'.toLabel(bold: true).expand,
+              '  ${sceance.date}'.toLabel(bold: true).expand,
             ],
           ).padding9.cardColor(color: context.bottomAppBarColor),
           Row(
@@ -57,6 +57,9 @@ class SceanceAbscence extends StatelessWidget {
               builder: (context, snap) {
                 if (snap.data is Failed) {
                   return MError(exception: (snap.data as Failed).exception);
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const MWaiting();
                 }
                 if (snap.data is LoadData) {
                   return SizedBox(
@@ -89,10 +92,6 @@ class SceanceAbscence extends StatelessWidget {
                                 '                          ${student.lastname}'
                                     .toLabel(bold: true)
                                     .expand,
-                                MIconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () {},
-                                    hint: 'Supprimer')
                               ],
                             ).padding9.cardColor(
                                 color: index.isOdd

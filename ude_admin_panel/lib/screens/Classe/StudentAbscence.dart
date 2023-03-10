@@ -17,8 +17,8 @@ class StudentAbscence extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: context.width * 0.75,
-      height: context.height * 0.75,
+      width: context.width * 0.80,
+      height: context.height * 0.80,
       child: Column(
         children: [
           Row(
@@ -57,6 +57,9 @@ class StudentAbscence extends StatelessWidget {
               builder: (context, snap) {
                 if (snap.data is Failed) {
                   return MError(exception: (snap.data as Failed).exception);
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const MWaiting();
                 }
                 if (snap.data is LoadData) {
                   return Row(

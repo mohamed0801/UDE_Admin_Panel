@@ -98,7 +98,7 @@ class DBServices {
             .collection('Enseignant')
             .doc(enseignant)
             .collection('Classes')
-            .doc(classeRef.path.toString().substring(20))
+            .doc(classeRef.path.toString().substring(19))
             .set(data, SetOptions(merge: true));
       }
       return EnseignantM.fromSnapshot(teacherSnapshot);
@@ -162,9 +162,9 @@ class DBServices {
         await lyceecol
             .doc(lycee)
             .collection('Enseignant')
-            .doc(enseignant)
+            .doc(enseignant.toUpperCase())
             .collection('Classes')
-            .doc(classeRef.path.toString().substring(20))
+            .doc(classeRef.path.toString().substring(19))
             .set(data, SetOptions(merge: true));
       }
       return true;
@@ -184,6 +184,91 @@ class DBServices {
         .toList();
 
     return listeClasses;
+  }
+
+  static Future<bool> deleteTeacherById(String lycee, String documentId) async {
+    try {
+      // Supprime le document Classe
+      var classeSnapshot = await lyceecol
+          .doc(lycee)
+          .collection('Enseignant')
+          .doc(documentId)
+          .collection('Classes')
+          .get();
+      for (var doc in classeSnapshot.docs) {
+        doc.reference.delete();
+      }
+
+      // Supprimer le document Sceances
+      var sceanceSnapshot = await lyceecol
+          .doc(lycee)
+          .collection('Enseignant')
+          .doc(documentId)
+          .collection('Sceances')
+          .get();
+      for (var doc in sceanceSnapshot.docs) {
+        doc.reference.delete();
+      }
+      // Supprimer le document lui meme
+      await lyceecol
+          .doc(lycee)
+          .collection('Enseignant')
+          .doc(documentId)
+          .delete();
+      print('Le document a été supprimé avec succès !');
+      return true;
+    } catch (e) {
+      print('Une erreur est survenue lors de la suppression du document : $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteTeacherClasse(
+      String lycee, String documentId, String classe) async {
+    try {
+      // Supprime le document
+      await lyceecol
+          .doc(lycee)
+          .collection('Enseignant')
+          .doc(documentId)
+          .collection('Classes')
+          .doc(classe)
+          .delete();
+
+      print('Le document a été supprimé avec succès !');
+      return true;
+    } catch (e) {
+      print('Une erreur est survenue lors de la suppression du document : $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteTeacherSceance(
+      String lycee, String documentId, String sceanceId) async {
+    try {
+      // Supprime le document
+      var snapshot = await lyceecol
+          .doc(lycee)
+          .collection('Enseignant')
+          .doc(documentId)
+          .collection('Sceances')
+          .where('Id', isEqualTo: sceanceId)
+          .get();
+      for (var document in snapshot.docs) {
+        var docRef = document.reference;
+        FirebaseFirestore.instance
+            .doc(docRef.path)
+            .collection('Abscences')
+            .doc()
+            .delete();
+        document.reference.delete();
+      }
+      print('Le document a été supprimé avec succès !');
+      return true;
+    } catch (e) {
+      print('Une erreur est survenue lors de la suppression du document : $e');
+      return false;
+    }
   }
 
   static Future<DocumentReference> getClasseRef(
@@ -258,8 +343,9 @@ class DBServices {
           .set({
         'Nom': firstname,
         'Prénom': lastname,
-        'id': student,
-        'TotalAbscence': '0'
+        'id': student.toUpperCase(),
+        'TotalAbscence': '0',
+        'Sexe': sexe
       });
       var etudiantRef = lyceecol
           .doc(lycee)
@@ -320,7 +406,7 @@ class DBServices {
             .doc(lycee)
             .collection('Classes')
             .doc(classe)
-            .update({'Garcon': newFille.toString()});
+            .update({'Fille': newFille.toString()});
         print('Nouvel eleve fille ajoutee');
         await lyceecol
             .doc(lycee)
@@ -332,6 +418,67 @@ class DBServices {
     } catch (e) {
       print('Erreur lors de l\'ajout de l\'étudiant : $e');
       return null;
+    }
+  }
+
+  static Future<bool> deleteStudentById(
+      String lycee, String classe, String documentId) async {
+    try {
+      var etudiantRef = lyceecol
+          .doc(lycee)
+          .collection('Classes')
+          .doc(classe)
+          .collection('Etudiants')
+          .doc(documentId);
+      var etudiantSnapshot = await etudiantRef.get();
+      StudentM std = StudentM.fromSnapshot(etudiantSnapshot);
+      var classeSnap =
+          await lyceecol.doc(lycee).collection('Classes').doc(classe).get();
+      //Actualiser le nombre d'eleve de la classe si un garcon est suprime
+      if (std.sexe == 'Masculin') {
+        var newNBEleve = int.parse(classeSnap.data()!['NBEleves']) - 1;
+        var newGarcon = int.parse(classeSnap.data()!['Garcon']) - 1;
+        await lyceecol
+            .doc(lycee)
+            .collection('Classes')
+            .doc(classe)
+            .update({'Garcon': newGarcon.toString()});
+        await lyceecol
+            .doc(lycee)
+            .collection('Classes')
+            .doc(classe)
+            .update({'NBEleves': newNBEleve.toString()});
+        print(' Eleve garcon suprimee');
+      }
+      //Actualiser le nombre d'eleve de la classe si une fille est suprimee
+      else {
+        var newNBEleve = int.parse(classeSnap.data()!['NBEleves']) - 1;
+        var newFille = int.parse(classeSnap.data()!['Fille']) - 1;
+        await lyceecol
+            .doc(lycee)
+            .collection('Classes')
+            .doc(classe)
+            .update({'Fille': newFille.toString()});
+        print(' Eleve fille suprimee');
+        await lyceecol
+            .doc(lycee)
+            .collection('Classes')
+            .doc(classe)
+            .update({'NBEleves': newNBEleve.toString()});
+      }
+      // Supprime le document
+      await lyceecol
+          .doc(lycee)
+          .collection('Classes')
+          .doc(classe)
+          .collection('Etudiants')
+          .doc(documentId)
+          .delete();
+      print('Le document a été supprimé avec succès !');
+      return true;
+    } catch (e) {
+      print('Une erreur est survenue lors de la suppression du document : $e');
+      return false;
     }
   }
 

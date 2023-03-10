@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
+
 import '../../Bloc/BlocState.dart';
 import '../../module/estension.dart';
 import '../../module/widgets.dart';
@@ -30,6 +31,9 @@ class Classe extends StatelessWidget {
             builder: (context, snap) {
               if (snap.data is Failed) {
                 return MError(exception: (snap.data as Failed).exception);
+              }
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const MWaiting();
               }
               if (snap.data is LoadData) {
                 return SizedBox(

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:ude_admin_panel/Repository/UserRepo.dart';
+import 'package:ude_admin_panel/Services/db.dart';
 import 'package:ude_admin_panel/module/loading.dart';
 
 import '../../Bloc/BlocState.dart';
@@ -39,20 +40,23 @@ class Teachers extends StatelessWidget {
     ];
 
     final String codePattern =
-        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{7}\$";
+        "^(${context.user!.id!.substring(0, 4)}|${context.user!.id!.substring(0, 4).toLowerCase()})[a-zA-Z0-9]{7}\$";
     final RegExp codregex = RegExp(codePattern);
     final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z\s]+$');
 
     return Stack(
       children: [
         SizedBox(
-          width: context.width * 0.75,
-          height: context.height * 0.75,
+          width: context.width * 0.80,
+          height: context.height * 0.80,
           child: StreamBuilder<Object>(
               stream: context.userBloc.userListStream,
               builder: (context, snapshot) {
                 if (snapshot.data is Failed) {
                   return MError(exception: (snapshot.data as Failed).exception);
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const MWaiting();
                 }
                 if (snapshot.data is LoadData) {
                   return Column(
@@ -115,7 +119,58 @@ class Teachers extends StatelessWidget {
                                     hint: 'Sceance'),
                                 MIconButton(
                                     icon: const Icon(Icons.delete),
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                                'Etes vous sure de vouloir supprimer cet enseignant'),
+                                            actions: [
+                                              MButton(
+                                                  type: ButtonType.Cancel,
+                                                  onTap: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  title: 'Cancel'),
+                                              MButton(
+                                                  type: ButtonType.Save,
+                                                  onTap: () async {
+                                                    Chargement(context);
+                                                    if (await DBServices
+                                                        .deleteTeacherById(
+                                                            context.user!.id!
+                                                                .substring(
+                                                                    0, 4),
+                                                            enseignant.id)) {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.userBloc
+                                                          .loadTeacherList(
+                                                              context.user!.id!
+                                                                  .substring(
+                                                                      0, 4));
+                                                      context.snackBar(
+                                                          'Enseigant supprimer avec success.',
+                                                          color: Colors.green);
+                                                    } else {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.snackBar(
+                                                          'Erreur lors de la Suppression. Veuiller recommencer ulterieurement',
+                                                          color: Colors.red);
+                                                    }
+                                                  },
+                                                  title: 'Save'),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
                                     hint: 'Supprimer')
                               ],
                             ).padding9.cardColor(
@@ -235,11 +290,28 @@ class Teachers extends StatelessWidget {
                                                     classeRefs)) {
                                               Navigator.of(context).pop();
                                               newteacher.setValue(false);
+                                              code.dispose();
+                                              firstname.dispose();
+                                              lastname.dispose();
+                                              classe.dispose();
+                                              context.userBloc.loadTeacherList(
+                                                  context.user!.id!
+                                                      .substring(0, 4));
+                                              context.snackBar(
+                                                  "Enseignant ajouter avec success",
+                                                  color: Colors.green,
+                                                  title: 'Success');
                                             } else {
                                               Navigator.of(context).pop();
                                               newteacher.setValue(false);
+                                              code.dispose();
+                                              firstname.dispose();
+                                              lastname.dispose();
+                                              classe.dispose();
                                               context.snackBar(
-                                                  "Erreur lors de l'ajout de l'enseignant");
+                                                  "Erreur lors de l'ajout de l'enseignant",
+                                                  color: Colors.red,
+                                                  title: 'Erreur');
                                             }
                                           }
                                         },

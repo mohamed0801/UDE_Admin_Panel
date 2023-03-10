@@ -54,7 +54,7 @@ class SideBar extends StatelessWidget {
             },
           ),
           SizedBox(
-            height: context.height * 0.6,
+            height: context.height * 0.2,
           ),
           MSideBarItem(
             title: 'Reset',

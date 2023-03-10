@@ -25,20 +25,23 @@ class ClasseStudent extends StatelessWidget {
     TextEditingController? sexe = TextEditingController();
     final List<String> studentsexe = ['Masculin', 'Feminin'];
     final String codePattern =
-        "^${context.user!.id!.substring(0, 4)}[a-zA-Z0-9]{7}\$";
+        "^(${context.user!.id!.substring(0, 4)}|${context.user!.id!.substring(0, 4).toLowerCase()})[a-zA-Z0-9]{7}\$";
     final RegExp codregex = RegExp(codePattern);
     final RegExp simpleFieldRegex = RegExp(r'^[a-zA-Z\s]+$');
     final RegExp simpleFieldNumberRegex = RegExp(r'^[a-zA-Z0-9]+$');
     return Stack(
       children: [
         SizedBox(
-          width: context.width * 0.75,
-          height: context.height * 0.75,
+          width: context.width * 0.80,
+          height: context.height * 0.80,
           child: StreamBuilder<Object>(
               stream: context.userBloc.studentListStream,
               builder: (context, snap) {
                 if (snap.data is Failed) {
                   return MError(exception: (snap.data as Failed).exception);
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const MWaiting();
                 }
                 if (snap.data is LoadData) {
                   return SingleChildScrollView(
@@ -131,13 +134,13 @@ class ClasseStudent extends StatelessWidget {
                                       '${student.id}'
                                           .toLabel(bold: true)
                                           .expand,
-                                      '      ${student.firstname}'
+                                      '   ${student.firstname}'
                                           .toLabel(bold: true)
                                           .expand,
-                                      '                ${student.lastname}'
+                                      '               ${student.lastname}'
                                           .toLabel(bold: true)
                                           .expand,
-                                      '                  ${student.abscence}'
+                                      '                ${student.abscence}'
                                           .toLabel(bold: true)
                                           .expand,
                                       MIconButton(
@@ -163,7 +166,72 @@ class ClasseStudent extends StatelessWidget {
                                           hint: 'Abscence'),
                                       MIconButton(
                                           icon: const Icon(Icons.delete),
-                                          onPressed: () {},
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: const Text(
+                                                      'Etes vous ssure de vouloir supprimer cet eleve'),
+                                                  actions: [
+                                                    MButton(
+                                                        type: ButtonType.Cancel,
+                                                        onTap: () {
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                        title: 'Cancel'),
+                                                    MButton(
+                                                        type: ButtonType.Save,
+                                                        onTap: () async {
+                                                          Chargement(context);
+                                                          if (await DBServices
+                                                              .deleteStudentById(
+                                                                  context
+                                                                      .user!.id!
+                                                                      .substring(
+                                                                          0, 4),
+                                                                  classe.name,
+                                                                  student.id)) {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                            context.userBloc
+                                                                .loadClasseStudentList(
+                                                                    context
+                                                                        .user!
+                                                                        .id!
+                                                                        .substring(
+                                                                            0,
+                                                                            4),
+                                                                    classe
+                                                                        .name);
+                                                            context.snackBar(
+                                                                'Etudiant supprimer avec success.',
+                                                                color: Colors
+                                                                    .green);
+                                                          } else {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                            context.snackBar(
+                                                                'Erreur lors de la Suppression. Veuiller recommencer ulterieurement',
+                                                                color:
+                                                                    Colors.red);
+                                                          }
+                                                        },
+                                                        title: 'Save'),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
                                           hint: 'Supprimer')
                                     ],
                                   ).padding9.cardColor(
@@ -272,11 +340,30 @@ class ClasseStudent extends StatelessWidget {
                                                   sexe.text)) {
                                             Navigator.of(context).pop();
                                             newstudent.setValue(false);
+                                            code.dispose();
+                                            firstname.dispose();
+                                            lastname.dispose();
+                                            sexe.dispose();
+                                            context.userBloc
+                                                .loadClasseStudentList(
+                                                    context.user!.id!
+                                                        .substring(0, 4),
+                                                    classe.name);
+                                            context.snackBar(
+                                                "Eleve ajouter avec success",
+                                                color: Colors.green,
+                                                title: 'Success');
                                           } else {
                                             Navigator.of(context).pop();
                                             newstudent.setValue(false);
+                                            code.dispose();
+                                            firstname.dispose();
+                                            lastname.dispose();
+                                            sexe.dispose();
                                             context.snackBar(
-                                                "Erreur lors de l'ajout de l'eleve");
+                                                "Erreur lors de l'ajout de l'eleve",
+                                                color: Colors.red,
+                                                title: 'Erreur');
                                           }
                                         },
                                         title: 'new'),

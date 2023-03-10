@@ -20,6 +20,7 @@ class TeacherClasse extends StatelessWidget {
     MBloc<bool> newclasse = MBloc<bool>()..setValue(false);
     TextEditingController? classe = TextEditingController();
     List<DocumentReference> classeRefs = [];
+    List<String> curentTeacherClasse = [];
     final List<String> userclasse = [
       '10eCG',
       '11eS',
@@ -34,8 +35,8 @@ class TeacherClasse extends StatelessWidget {
     return Stack(
       children: [
         SizedBox(
-          width: context.width * 0.75,
-          height: context.height * 0.75,
+          width: context.width * 0.80,
+          height: context.height * 0.80,
           child: Column(
             children: [
               Row(
@@ -47,13 +48,9 @@ class TeacherClasse extends StatelessWidget {
                   ),
                   const Icon(Icons.person).hMargin9,
                   '${enseignant.id}'.toLabel(bold: true).expand,
-                  '      ${enseignant.firstname}'.toLabel(bold: true).expand,
-                  '                ${enseignant.lastname}'
-                      .toLabel(bold: true)
-                      .expand,
-                  '                  ${enseignant.hours}'
-                      .toLabel(bold: true)
-                      .expand,
+                  ' ${enseignant.firstname}'.toLabel(bold: true).expand,
+                  ' ${enseignant.lastname}'.toLabel(bold: true).expand,
+                  '     ${enseignant.hours}'.toLabel(bold: true).expand,
                 ],
               )
                   .padding9
@@ -65,8 +62,8 @@ class TeacherClasse extends StatelessWidget {
                   ),
                   'Nom'.toLabel(bold: true).expand,
                   '       Fille'.toLabel(bold: true).expand,
-                  '                      Garcon'.toLabel(bold: true).expand,
-                  '                 Total'.toLabel(bold: true).expand,
+                  '       Garcon'.toLabel(bold: true).expand,
+                  '           Total'.toLabel(bold: true).expand,
                   MIconButton(
                     hint: 'new classe',
                     icon:
@@ -85,6 +82,9 @@ class TeacherClasse extends StatelessWidget {
                     if (snap.data is Failed) {
                       return MError(exception: (snap.data as Failed).exception);
                     }
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const MWaiting();
+                    }
                     if (snap.data is LoadData) {
                       return SizedBox(
                         height: 500,
@@ -92,6 +92,10 @@ class TeacherClasse extends StatelessWidget {
                           itemCount: (snap.data as LoadData).rows.length,
                           itemBuilder: (context, index) {
                             final classe = (snap.data as LoadData).rows[index];
+                            if (!curentTeacherClasse.contains(classe.name)) {
+                              curentTeacherClasse.add(classe.name);
+                            }
+
                             return Row(
                               children: [
                                 Container(
@@ -108,19 +112,72 @@ class TeacherClasse extends StatelessWidget {
                                 ),
                                 const Icon(Icons.school).hMargin9,
                                 '${classe.name}'.toLabel(bold: true).expand,
-                                '          ${classe.fille}'
+                                '       ${classe.fille}'
                                     .toLabel(bold: true)
                                     .expand,
-                                '                               ${classe.garcon}'
+                                '           ${classe.garcon}'
                                     .toLabel(bold: true)
                                     .expand,
-                                '                           ${classe.total}'
+                                '            ${classe.total}'
                                     .toLabel(bold: true)
                                     .expand,
                                 MIconButton(
                                     icon: const Icon(Icons.delete),
-                                    onPressed: () {},
-                                    hint: 'Supprimer'),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                                'Etes vous sure de vouloir supprimer cette sceance'),
+                                            actions: [
+                                              MButton(
+                                                  type: ButtonType.Cancel,
+                                                  onTap: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  title: 'Cancel'),
+                                              MButton(
+                                                  type: ButtonType.Save,
+                                                  onTap: () async {
+                                                    Chargement(context);
+                                                    if (await DBServices
+                                                        .deleteTeacherClasse(
+                                                            context.user!.id!
+                                                                .substring(
+                                                                    0, 4),
+                                                            enseignant.id,
+                                                            classe.name)) {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.userBloc
+                                                          .loadTeacherClasseList(
+                                                              context.user!.id!
+                                                                  .substring(
+                                                                      0, 4),
+                                                              enseignant.id);
+                                                      context.snackBar(
+                                                          "La classe ${classe.name} a ete retirer des classe de l'enseignant.",
+                                                          color: Colors.green);
+                                                    } else {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.snackBar(
+                                                          'Erreur lors de la Suppression. Veuiller recommencer ulterieurement',
+                                                          color: Colors.red);
+                                                    }
+                                                  },
+                                                  title: 'Save'),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                    hint: 'Supprimer')
                               ],
                             ).padding9.cardColor(
                                 color: index.isOdd
@@ -138,6 +195,8 @@ class TeacherClasse extends StatelessWidget {
         StreamBuilder<bool>(
             stream: newclasse.stream,
             builder: (context, snap) {
+              userclasse.removeWhere(
+                  (element) => curentTeacherClasse.contains(element));
               return snap.hasData && snap.data!
                   ? Container(
                       width: double.infinity,
@@ -193,11 +252,22 @@ class TeacherClasse extends StatelessWidget {
                                             classeRefs)) {
                                           Navigator.of(context).pop();
                                           newclasse.setValue(false);
+                                          context.userBloc
+                                              .loadTeacherClasseList(
+                                            context.user!.id!.substring(0, 4),
+                                            enseignant.id,
+                                          );
+                                          context.snackBar(
+                                              title: 'Success',
+                                              "Classe Ajouter a l'enseignant avec success",
+                                              color: Colors.green);
                                         } else {
                                           Navigator.of(context).pop();
                                           newclasse.setValue(false);
                                           context.snackBar(
-                                              "Erreur lors de l'ajout de la classe");
+                                              title: 'Error',
+                                              "Erreur lors de l'ajout de la classe",
+                                              color: Colors.red);
                                         }
                                       },
                                       title: 'new'),

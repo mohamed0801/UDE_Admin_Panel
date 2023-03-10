@@ -1,6 +1,8 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
+import 'package:ude_admin_panel/Services/db.dart';
+import 'package:ude_admin_panel/module/loading.dart';
 import 'package:ude_admin_panel/screens/Teachers/SceanceAbscence.dart';
 
 import '../../Bloc/BlocState.dart';
@@ -15,8 +17,8 @@ class TeacherSceance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: context.width * 0.75,
-      height: context.height * 0.75,
+      width: context.width * 0.80,
+      height: context.height * 0.80,
       child: Column(
         children: [
           Row(
@@ -53,6 +55,9 @@ class TeacherSceance extends StatelessWidget {
               builder: (context, snap) {
                 if (snap.data is Failed) {
                   return MError(exception: (snap.data as Failed).exception);
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const MWaiting();
                 }
                 if (snap.data is LoadData) {
                   return SizedBox(
@@ -100,7 +105,60 @@ class TeacherSceance extends StatelessWidget {
                                     hint: 'Abscence'),
                                 MIconButton(
                                     icon: const Icon(Icons.delete),
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                                'Etes vous sure de vouloir supprimer cette sceance'),
+                                            actions: [
+                                              MButton(
+                                                  type: ButtonType.Cancel,
+                                                  onTap: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  title: 'Cancel'),
+                                              MButton(
+                                                  type: ButtonType.Save,
+                                                  onTap: () async {
+                                                    Chargement(context);
+                                                    if (await DBServices
+                                                        .deleteTeacherSceance(
+                                                            context.user!.id!
+                                                                .substring(
+                                                                    0, 4),
+                                                            enseignant.id,
+                                                            sceance.id)) {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.userBloc
+                                                          .loadTeacherSceanceList(
+                                                              context.user!.id!
+                                                                  .substring(
+                                                                      0, 4),
+                                                              enseignant.id);
+                                                      context.snackBar(
+                                                          'Sceance supprimer avec success.',
+                                                          color: Colors.green);
+                                                    } else {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      context.snackBar(
+                                                          'Erreur lors de la Suppression. Veuiller recommencer ulterieurement',
+                                                          color: Colors.red);
+                                                    }
+                                                  },
+                                                  title: 'Save'),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
                                     hint: 'Supprimer')
                               ],
                             ).padding9.cardColor(
